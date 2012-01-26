@@ -8,14 +8,21 @@
             <param name="ConversionPattern" value="%-5p %c{1} - %m%n"/> 
         </layout> 
     </appender> 
-
+    <appender name="util" class="org.apache.log4j.FileAppender">
+        <param name="File" value="util.log" />
+        <param name="Append" value="true" />
+        <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%t %-5p %c{2} - %m%n"/>
+        </layout>           
+    </appender>
     <root> 
         <priority value ="error" /> 
         <appender-ref ref="console" /> 
+        <appender-ref ref="util"/>
     </root>
 
     <logger name="ru.hflabs.oss">
         <level value="debug"/>
     </logger> 
-  
+
 </log4j:configuration>
