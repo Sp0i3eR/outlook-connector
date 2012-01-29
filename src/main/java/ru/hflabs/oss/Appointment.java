@@ -1,6 +1,9 @@
 package ru.hflabs.oss;
 
+import java.text.DateFormat;
+
 import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -15,23 +18,35 @@ public class Appointment {
     private String      categories,
             subject,
             body;
-    private Calendar    start,
-            end;
+    private Calendar    start, end;
     private Integer     duration;
     private Boolean     alldayevent,
             isrecurring;
-    
+
 
     public Appointment(Dispatch appointment) {
+        DateFormat df = DateFormat.getDateTimeInstance();
         categories = Dispatch.get(appointment,"Categories").toString();
         subject = Dispatch.get(appointment,"Subject").toString();
         body = Dispatch.get(appointment,"Body").toString();
-        duration = Dispatch.get(appointment,"Duration").toInt();
-        //start.setTime(Dispatch.get(appointment,"Start").toJavaDate());
-        //end.setTime(Dispatch.get(appointment,"End").toJavaDate());
-        alldayevent = Dispatch.get(appointment,"AllDayEvent").toBoolean();
-        isrecurring = Dispatch.get(appointment,"IsRecurring").toBoolean();
-        }
+        duration = Dispatch.get(appointment,"Duration").getInt();
+        start = new GregorianCalendar();
+        start.setTime(Dispatch.get(appointment,"Start").getJavaDate());
+        end = new GregorianCalendar();
+        end.setTime(Dispatch.get(appointment,"End").getJavaDate());
+        alldayevent = Dispatch.get(appointment,"AllDayEvent").getBoolean();
+        isrecurring = Dispatch.get(appointment,"IsRecurring").getBoolean();
+        log.debug("Created appointment with following fields:");
+        log.debug("categories = " + categories);
+        log.debug("subject = " + subject);
+        log.debug("body = " + body);
+        log.debug("duration = " + duration);
+        log.debug("start = " + df.format(start.getTime()));
+        log.debug("end = " + df.format(end.getTime()));
+        log.debug("alldayevent = " + alldayevent);
+        log.debug("isrecurring = " + isrecurring);
+
+    }
 
 
 
