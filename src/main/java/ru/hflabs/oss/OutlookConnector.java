@@ -26,19 +26,48 @@ public class OutlookConnector {
     ArrayList<Appointment> appointmentlist = new ArrayList<Appointment>();
     private Dispatch outlook;
     private Dispatch ns;
-    private Dispatch folder;
+    private Dispatch currentFolder;
     private Dispatch items;
 
-    public OutlookConnector() {
+    private void init(String folderName) {
         axc = new ActiveXComponent("Outlook.Application");
         log.info("Outlook ActiveX version: " + axc.getProperty("Version"));
         outlook = axc.getObject();
         log.info("Got Outlook version: " + Dispatch.get(outlook,"Version"));
         ns = axc.getProperty("Session").toDispatch();
-        folder = Dispatch.call(ns,"GetDefaultFolder",olFolderCalendar).toDispatch();
-        items = Dispatch.get(folder,"Items").toDispatch();
+        currentFolder = Dispatch.call(ns,"GetDefaultFolder",olFolderCalendar).toDispatch();
+        if (folderName!=null) currentFolder = findFolder(folderName,currentFolder);
+        items = Dispatch.get(currentFolder,"Items").toDispatch();
     }
+    public OutlookConnector(String folderName) {
+        init(folderName);
+    }
+    public OutlookConnector() {
+        init((String)null);
+    }
+    private Dispatch findFolder(String folderName,Dispatch folder) {
+        Variant folders = Dispatch.call(folder,"Folders");
+        if (!folders.isNull()) {
+            Variant item = Dispatch.call(folders.toDispatch(),"GetFirst");
+            while (!item.isNull()) {
+                log.debug(Dispatch.get(item.toDispatch(),"FolderPath"));
+                if (folderName.equalsIgnoreCase(Dispatch.get(item.toDispatch(),"Name").toString())) return item.toDispatch();
+                item = Dispatch.call(folders.toDispatch(),"GetNext");
+            }
+            return folder;
+        } else return folder;
+    }
+    private void recurseFolders(Dispatch folder) {
+        Variant folders = Dispatch.call(folder,"Folders");
+        if (!folders.isNull()) {
+            Variant item = Dispatch.call(folders.toDispatch(),"GetFirst");
+            while (!item.isNull()) {
+                log.debug(Dispatch.get(item.toDispatch(),"FolderPath"));
+                item = Dispatch.call(folders.toDispatch(),"GetNext");
+            }
+        }
 
+    }
     public int fetch() {
         Variant item = Dispatch.call(items,"GetFirst");
         int retrieved = 0;
@@ -76,9 +105,8 @@ public class OutlookConnector {
     }
 */
 
-
     public static void main( String[] args ) {
-        OutlookConnector oc = new OutlookConnector();
+        OutlookConnector oc = new OutlookConnector("тест");
         System.out.println("Fetched " + Integer.toString(oc.fetch(new GregorianCalendar(2012,0,30),new GregorianCalendar(2012,1,15))) + " items.");
         for (Appointment appointment:oc.getAppointmentlist())
             System.out.println(appointment.getSubject());

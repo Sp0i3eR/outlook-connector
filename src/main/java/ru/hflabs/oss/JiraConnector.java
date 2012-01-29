@@ -14,8 +14,11 @@ import org.apache.commons.logging.LogFactory;
 
 import org.swift.common.soap.jira.JiraSoapService;
 import org.swift.common.soap.jira.JiraSoapServiceServiceLocator;
+import org.swift.common.soap.jira.RemoteAuthenticationException;
+import org.swift.common.soap.jira.RemoteException;
 import org.swift.common.soap.jira.RemoteIssue;
 import org.swift.common.soap.jira.RemoteFilter;
+import org.swift.common.soap.jira.RemotePermissionException;
 import org.swift.common.soap.jira.RemoteWorklog;
 
 /**
@@ -77,6 +80,25 @@ public class JiraConnector
         return Long.toString(delta) + "m";
     }
 
+    public boolean issueExist(String key) {
+        try {
+            jss.getIssue(token,key);
+        } catch (RemotePermissionException e) {
+            return false;
+        } catch (RemoteAuthenticationException e) {
+            log.debug(e);
+            return false;
+        } catch (RemoteException e) {
+            log.debug(e);
+            return false;
+        } catch (java.rmi.RemoteException e) {
+            log.debug(e);
+            return false;
+        }
+        return true;
+    }
+
+
     public boolean logWorkAgainstIssueById(String key,Calendar start,String delta,String comment) {
         try {
             RemoteWorklog wlog = new RemoteWorklog();
@@ -111,7 +133,8 @@ public class JiraConnector
 
     public static void main( String[] args )
     {
-            JiraConnector jc = new JiraConnector();
-            System.out.println("Log for issue "+ args[0] + (jc.logWorkAgainstIssueById(args[0],args[1],args[2])?" submitted successfully":" submission failed"));
+        JiraConnector jc = new JiraConnector();
+        //System.out.println("Log for issue "+ args[0] + (jc.logWorkAgainstIssueById(args[0],args[1],args[2])?" submitted successfully":" submission failed"));
+        System.out.println("Issue "+ args[0] + (jc.issueExist(args[0])?" exist":" don't exist"));
     }
 }
