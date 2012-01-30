@@ -3,6 +3,7 @@ package ru.hflabs.oss;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import java.util.Calendar;
@@ -16,8 +17,6 @@ import org.swift.common.soap.jira.JiraSoapService;
 import org.swift.common.soap.jira.JiraSoapServiceServiceLocator;
 import org.swift.common.soap.jira.RemoteAuthenticationException;
 import org.swift.common.soap.jira.RemoteException;
-import org.swift.common.soap.jira.RemoteIssue;
-import org.swift.common.soap.jira.RemoteFilter;
 import org.swift.common.soap.jira.RemotePermissionException;
 import org.swift.common.soap.jira.RemoteWorklog;
 
@@ -52,9 +51,10 @@ public class JiraConnector
 
     public JiraConnector() {
         Properties props = new Properties();
-        log.info("Loading user settings from:"+System.getProperty("user.home")+File.separator+"jira.properties");
+        File propertiesFile = new File(System.getProperty("user.home")+File.separator+"jira.properties");
+        log.info("Loading user settings from:" + propertiesFile);
         try {
-            props.load(new FileInputStream(System.getProperty("user.home")+File.separator+"jira.properties"));
+            props.load(new FileInputStream(propertiesFile));
             init(props.getProperty("jira.url"),props.getProperty("jira.username"),props.getProperty("jira.password"));
         } catch (FileNotFoundException e) {
             log.warn("User preferences not found");
