@@ -3,7 +3,6 @@ package ru.hflabs.oss;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import java.util.Calendar;
@@ -36,12 +35,12 @@ public class JiraConnector
 
     private boolean init(String server, String user, String password) {
         try {
-            log.info("Connecting to server: "+ server + RPC_ENDPOINT);
+            log.debug("Connecting to server: "+ server + RPC_ENDPOINT);
             jsssl.setJirasoapserviceV2EndpointAddress(server + RPC_ENDPOINT);
             jsssl.setMaintainSession(true);
             jss = jsssl.getJirasoapserviceV2();
             token = jss.login(user,password);
-            log.info("Connected, got token: " + token);
+            log.debug("Connected, got token: " + token);
             return true;
         } catch (Exception e) {
             e.printStackTrace();
@@ -76,7 +75,8 @@ public class JiraConnector
     }
 
     private String DateIntervalToJira(Calendar start, Calendar end) {
-        long delta=(end.getTimeInMillis() - start.getTimeInMillis())/(60*60*1000);
+        log.debug("delta = " + end.getTimeInMillis() + " - " + start.getTimeInMillis());
+        long delta=(end.getTimeInMillis() - start.getTimeInMillis())/(60*1000);
         return Long.toString(delta) + "m";
     }
 
@@ -102,6 +102,9 @@ public class JiraConnector
     public boolean logWorkAgainstIssueById(String key,Calendar start,String delta,String comment) {
         try {
             RemoteWorklog wlog = new RemoteWorklog();
+            log.debug("Start = " + start);
+            log.debug("Delta = " + delta);
+            log.debug("Comment = " + comment);
             wlog.setStartDate(start);
             wlog.setTimeSpent(delta);
             wlog.setComment(comment);

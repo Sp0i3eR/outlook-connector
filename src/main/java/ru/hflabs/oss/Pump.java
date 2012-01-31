@@ -1,9 +1,6 @@
 package ru.hflabs.oss;
 
-import java.io.Console;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import java.text.DateFormat;
@@ -15,7 +12,6 @@ import java.util.Calendar;
 import java.util.Formatter;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.Properties;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,8 +60,12 @@ public class Pump {
                     categoryMapper.put(categoryName,categoryTask);
                 }
             }
+            log.info("Connecting to outlook...");
             oc = new OutlookConnector(calendarName);
+            log.info("Done.");
+            log.info("Connecting to JIRA instance...");
             jc = new JiraConnector();
+            log.info("Done.");
 
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
@@ -111,6 +111,7 @@ public class Pump {
     }
     public void pretend() {
         Formatter f = new Formatter(System.out);
+        f.format("%40s | %10s | %6s | %10s","Subject","Date","Time","Task");
         for (Appointment appt:appointmentMapper.keySet()) {
             f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",appt.getSubject(),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
         }
@@ -135,7 +136,7 @@ public class Pump {
         }
         pump.map(start,end);
         pump.pretend();
-        String agree = System.console().readLine("Is this ^ ok?");
+        String agree = System.console().readLine("Is this ^ ok? [y/N] ");
         if (agree.matches("^[Yy][Ee]?[Ss]?"))
             pump.push();
 
