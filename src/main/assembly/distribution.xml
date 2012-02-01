@@ -1,0 +1,31 @@
+<assembly>
+  <id>distribution</id>
+  <formats>
+      <format>zip</format>
+  </formats>
+  <fileSets>
+    <fileSet>
+      <includes>
+        <include>README*</include>
+        <include>LICENSE*</include>
+        <include>NOTICE*</include>
+      </includes>
+    </fileSet>
+    <fileSet>
+        <directory>target/config</directory>
+        <outputDirectory></outputDirectory>
+        <includes>
+            <include>*</include>
+        </includes>
+    </fileSet>
+    <fileSet>
+      <directory>target</directory>
+      <outputDirectory></outputDirectory>
+      <includes>
+        <include>lib/*</include>
+        <include>*.jar</include>
+        <include>*.exe</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>

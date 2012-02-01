@@ -2,6 +2,7 @@ package ru.hflabs.oss;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -40,7 +41,7 @@ public class Pump {
     private static String taskRegex = "[A-Z]+-[0-9]+";
 
     public Pump(){
-        File propertiesFile = new File(System.getProperty("user.home")+File.separator+"pump.xml");
+        File propertiesFile = new File(System.getProperty("user.dir")+File.separator+"pump.xml");
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         try {
             DocumentBuilder db = dbf.newDocumentBuilder();
@@ -68,11 +69,11 @@ public class Pump {
             log.info("Done.");
 
         } catch (ParserConfigurationException e) {
-            e.printStackTrace();
+            log.error(e);
         } catch (SAXException e) {
-            e.printStackTrace();
+            log.error(e);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e);
         }
     }
 
@@ -113,7 +114,12 @@ public class Pump {
         Formatter f = new Formatter(System.out);
         f.format("%40s | %10s | %6s | %10s","Subject","Date","Time","Task");
         for (Appointment appt:appointmentMapper.keySet()) {
-            f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",appt.getSubject(),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
+            try {
+				f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",new String(appt.getSubject().getBytes("cp866"),"cp1251"),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
         }
     }
     public void push() {
@@ -122,6 +128,13 @@ public class Pump {
         }
     }
     public static void main(String[] args) {
+        if (args.length<2) {
+            System.err.println("Wrong arguments");
+            System.out.println("Usage:    pump from-date to-date");
+            System.out.println("Example:  pump 21.12.2011 30.12.2011");
+            return;
+        }
+
         Pump pump = new Pump();
         DateFormat df = new SimpleDateFormat("dd.MM.yyyy");
         Calendar start = new GregorianCalendar();
@@ -132,7 +145,7 @@ public class Pump {
             end.add(GregorianCalendar.DAY_OF_MONTH,1);
             end.add(GregorianCalendar.SECOND,-1);
         } catch (ParseException e) {
-            e.printStackTrace();
+            log.error(e);
         }
         pump.map(start,end);
         pump.pretend();

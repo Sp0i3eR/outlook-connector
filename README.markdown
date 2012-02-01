@@ -16,4 +16,6 @@ __Release Notes:__
 
 Currently there are none. Project in pre-alpha stage, non useable.
 
+__Usage:__
 
+outlook-connector.exe date-from date-to

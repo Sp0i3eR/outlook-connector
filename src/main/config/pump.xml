@@ -1,0 +1,6 @@
+﻿<pump>
+	<calendar folder="тест"/>
+	<category name="Лиловая категория" task="TEST-1"/>
+	<category name="Желтая категория" task="TEST-2"/>
+	<category name="Синяя категория" task="TEST-12"/>
+</pump>

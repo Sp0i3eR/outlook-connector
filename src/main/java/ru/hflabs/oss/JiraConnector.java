@@ -50,7 +50,7 @@ public class JiraConnector
 
     public JiraConnector() {
         Properties props = new Properties();
-        File propertiesFile = new File(System.getProperty("user.home")+File.separator+"jira.properties");
+        File propertiesFile = new File(System.getProperty("user.dir")+File.separator+"jira.properties");
         log.info("Loading user settings from:" + propertiesFile);
         try {
             props.load(new FileInputStream(propertiesFile));
