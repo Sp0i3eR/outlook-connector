@@ -19,3 +19,10 @@ Currently there are none. Project in pre-alpha stage, non useable.
 __Usage:__
 
 outlook-connector.exe date-from date-to
+Date format: dd.mm.yyyy 
+
+_Example:_
+
+Log all events from 6-th February 2012 to 13-th February 2012
+outlook-connector.exe 06.02.2012 13.02.2012
+
