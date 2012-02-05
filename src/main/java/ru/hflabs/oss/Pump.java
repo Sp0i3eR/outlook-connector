@@ -86,10 +86,10 @@ public class Pump {
             candidates.add(m.group());
         }
 
-        m = p.matcher(appointment.getBody());
-        while (m.find()) {
-            candidates.add(m.group());
-        }
+        //m = p.matcher(appointment.getBody());
+        //while (m.find()) {
+        //    candidates.add(m.group());
+        //}
         candidates.add(categoryMapper.get(appointment.getCategories()));
 
         while (!candidates.isEmpty()) {
@@ -117,14 +117,13 @@ public class Pump {
             try {
 				f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",new String(appt.getSubject().getBytes("cp866"),"cp1251"),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
 			} catch (UnsupportedEncodingException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				log.warn(e);
 			}
         }
     }
     public void push() {
         for (Appointment appt:appointmentMapper.keySet()) {
-            jc.logWorkAgainstIssueById(appointmentMapper.get(appt),appt.getStart(),appt.getEnd(),appt.getSubject() + "\n" + appt.getBody());
+            jc.logWorkAgainstIssueById(appointmentMapper.get(appt),appt.getStart(),appt.getEnd(),appt.getSubject()); //+ "\n" + appt.getBody());
         }
     }
     public static void main(String[] args) {
