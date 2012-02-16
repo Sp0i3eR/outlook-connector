@@ -13,6 +13,8 @@ import java.util.Calendar;
 import java.util.Formatter;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,8 +37,9 @@ public class Pump {
         LogFactory.getLog(Pump.class);
     private OutlookConnector oc;
     private JiraConnector jc;
-    private HashMap<String,String> categoryMapper = new HashMap<String,String>();
-    private HashMap<Appointment,String> appointmentMapper = new HashMap<Appointment,String>();
+    private Map<String,String> categoryMapper = new HashMap<String,String>();
+    private Map<Appointment,String> appointmentMapper = new HashMap<Appointment,String>();
+    private List<Appointment> missedTasks = new ArrayList<Appointment>();
     private String calendarName;
     private static String taskRegex = "[A-Z]+-[0-9]+";
 
@@ -78,25 +81,18 @@ public class Pump {
     }
 
     public String getBestTaskVariant(Appointment appointment) {
-        ArrayList<String> candidates = new ArrayList<String>();
         Pattern p = Pattern.compile(taskRegex);
-
         Matcher m = p.matcher(appointment.getSubject());
+
         while (m.find()) {
-            candidates.add(m.group());
-        }
-
-        //m = p.matcher(appointment.getBody());
-        //while (m.find()) {
-        //    candidates.add(m.group());
-        //}
-        candidates.add(categoryMapper.get(appointment.getCategories()));
-
-        while (!candidates.isEmpty()) {
-            String candidate = candidates.remove(0);
+            String candidate = m.group();
             if (jc.issueExist(candidate))
                 return candidate;
         }
+        String candidate = categoryMapper.get(appointment.getCategories());
+        if (jc.issueExist(candidate)) 
+            return candidate;
+
         return null;
 
     }
@@ -108,6 +104,8 @@ public class Pump {
             log.debug(appointment.getSubject() + " => " + task);
             if (task!=null)
                 appointmentMapper.put(appointment,task);
+            else 
+                missedTasks.add(appointment);
         }
     }
     public void pretend() {
@@ -115,10 +113,18 @@ public class Pump {
         f.format("%40s | %10s | %6s | %10s","Subject","Date","Time","Task");
         for (Appointment appt:appointmentMapper.keySet()) {
             try {
-				f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",new String(appt.getSubject().getBytes("cp866"),"cp1251"),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
-			} catch (UnsupportedEncodingException e) {
-				log.warn(e);
-			}
+                f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",new String(appt.getSubject().getBytes("cp866"),"cp1251"),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
+            } catch (UnsupportedEncodingException e) {
+                log.warn(e);
+            }
+        }
+        f.format("------Not mapped tasks-----");
+        for (Appointment appt:missedTasks) {
+            try {
+                f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm\n",new String(appt.getSubject().getBytes("cp866"),"cp1251"),appt.getStart().getTime(),appt.getDuration());
+            } catch (UnsupportedEncodingException e) {
+                log.warn(e);
+            }
         }
     }
     public void push() {
