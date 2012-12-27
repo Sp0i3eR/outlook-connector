@@ -2,8 +2,7 @@ package ru.hflabs.oss;
 
 import java.text.DateFormat;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.util.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -23,6 +22,29 @@ public class Appointment {
     private Boolean     alldayevent,
             isrecurring;
 
+
+    public Appointment(Map<String,Object> appointment) {
+
+        DateFormat df = DateFormat.getDateTimeInstance();
+        categories = (String) appointment.get("Categories");
+        subject = (String)appointment.get("Subject");
+        body = (String)appointment.get("Body");
+        start = new GregorianCalendar();
+        start.setTime(((Calendar)appointment.get("Start")).getTime());
+        end = new GregorianCalendar();
+        end.setTime(((Calendar)appointment.get("End")).getTime());
+        Long delta= (end.getTimeInMillis() - start.getTimeInMillis())/(60*1000);
+        duration=delta.intValue();
+        log.debug("Created appointment with following fields:");
+        log.debug("categories = " + categories);
+        log.debug("subject = " + subject);
+        log.debug("body = " + body);
+        log.debug("duration = " + duration);
+        log.debug("start = " + df.format(start.getTime()));
+        log.debug("end = " + df.format(end.getTime()));
+        log.debug("alldayevent = " + alldayevent);
+        log.debug("isrecurring = " + isrecurring);
+    }
 
     public Appointment(Dispatch appointment) {
         DateFormat df = DateFormat.getDateTimeInstance();

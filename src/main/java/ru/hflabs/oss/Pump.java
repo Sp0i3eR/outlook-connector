@@ -65,7 +65,11 @@ public class Pump {
                 }
             }
             log.info("Connecting to outlook...");
-            oc = new OutlookConnector(calendarName);
+            if (System.getProperty("os.name").matches("Mac OS.*"))
+                oc = new ASOutlookConnector(calendarName);
+            else if (System.getProperty("os.name").matches("Windows.*"))
+                oc = new COMOutlookConnector(calendarName);
+
             log.info("Done.");
             log.info("Connecting to JIRA instance...");
             jc = new JiraConnector();
@@ -108,23 +112,25 @@ public class Pump {
                 missedTasks.add(appointment);
         }
     }
+    private String systemAwareString(String in) {
+            if (System.getProperty("os.name").matches("Windows.*"))
+                  try {
+                      return new String(in.getBytes("cp866"),"cp1251");
+                  } catch (UnsupportedEncodingException e) {
+                      log.warn(e);
+                  }
+        return in;
+
+    }
     public void pretend() {
         Formatter f = new Formatter(System.out);
-        f.format("%40s | %10s | %6s | %10s","Subject","Date","Time","Task");
+        f.format("%40s | %10s | %6s | %10s\n","Subject","Date","Time","Task");
         for (Appointment appt:appointmentMapper.keySet()) {
-            try {
-                f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",new String(appt.getSubject().getBytes("cp866"),"cp1251"),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
-            } catch (UnsupportedEncodingException e) {
-                log.warn(e);
-            }
+                f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",systemAwareString(appt.getSubject()),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
         }
-        f.format("------Not mapped tasks-----");
+        f.format("------Not mapped tasks-----\n");
         for (Appointment appt:missedTasks) {
-            try {
-                f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm\n",new String(appt.getSubject().getBytes("cp866"),"cp1251"),appt.getStart().getTime(),appt.getDuration());
-            } catch (UnsupportedEncodingException e) {
-                log.warn(e);
-            }
+                f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm\n", systemAwareString(appt.getSubject()), appt.getStart().getTime(), appt.getDuration());
         }
     }
     public void push() {

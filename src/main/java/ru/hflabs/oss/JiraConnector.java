@@ -137,7 +137,6 @@ public class JiraConnector
     public static void main( String[] args )
     {
         JiraConnector jc = new JiraConnector();
-        //System.out.println("Log for issue "+ args[0] + (jc.logWorkAgainstIssueById(args[0],args[1],args[2])?" submitted successfully":" submission failed"));
         System.out.println("Issue "+ args[0] + (jc.issueExist(args[0])?" exist":" don't exist"));
     }
 }
