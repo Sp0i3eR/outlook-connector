@@ -15,8 +15,11 @@ Currently I'm testing against Outlook 2007/2010 for Windows, Outlook 2011 for Ma
 __Release Notes:__
 
 _1.1_
+
 - Initial windows support
+
 _1.2_
+
 - Mac OS Outlook integration!!!
 
 __Known Issues:__
@@ -28,9 +31,11 @@ __Usage:__
 Date format: dd.mm.yyyy
 
 _Windows:_
+
 outlook-connector.exe date-from date-to
 
 _Mac OS:_
+
 sh pump.sh date-from date-to
 
 
