@@ -20,7 +20,7 @@ abstract class OutlookConnector {
         this.folderName = folderName;
     }
     public OutlookConnector() {
-        this((String)null);
+        this(null);
     }
     abstract int fetch();
     abstract int fetch(Calendar start, Calendar end);

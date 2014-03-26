@@ -19,6 +19,8 @@ import org.swift.common.soap.jira.RemoteException;
 import org.swift.common.soap.jira.RemotePermissionException;
 import org.swift.common.soap.jira.RemoteWorklog;
 
+import javax.xml.rpc.ServiceException;
+
 /**
  * Jira connection class 
  *
@@ -28,42 +30,39 @@ public class JiraConnector
     private static final Log log =
         LogFactory.getLog(JiraConnector.class);
 
-    private JiraSoapServiceServiceLocator jsssl = new JiraSoapServiceServiceLocator();
     private JiraSoapService jss = null;
     private String token = null;
-    private static String RPC_ENDPOINT = "/rpc/soap/jirasoapservice-v2";
 
-    private boolean init(String server, String user, String password) {
-        try {
-            log.debug("Connecting to server: "+ server + RPC_ENDPOINT);
-            jsssl.setJirasoapserviceV2EndpointAddress(server + RPC_ENDPOINT);
-            jsssl.setMaintainSession(true);
-            jss = jsssl.getJirasoapserviceV2();
-            token = jss.login(user,password);
-            log.debug("Connected, got token: " + token);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
 
     public JiraConnector() {
+        this(null,null,null);
+    }
+
+    public JiraConnector(String server, String user, String password) {
         Properties props = new Properties();
         File propertiesFile = new File(System.getProperty("user.dir")+File.separator+"jira.properties");
         log.info("Loading user settings from:" + propertiesFile);
         try {
             props.load(new FileInputStream(propertiesFile));
-            init(props.getProperty("jira.url"),props.getProperty("jira.username"),props.getProperty("jira.password"));
         } catch (FileNotFoundException e) {
             log.warn("User preferences not found");
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    public JiraConnector(String server, String user, String password) {
-        init(server,user,password);
+        String RPC_ENDPOINT = "/rpc/soap/jirasoapservice-v2";
+        log.debug("Connecting to server: " + (server == null ? props.getProperty("jira.url") : server) + RPC_ENDPOINT);
+        JiraSoapServiceServiceLocator jsssl = new JiraSoapServiceServiceLocator();
+        jsssl.setJirasoapserviceV2EndpointAddress((server == null ? props.getProperty("jira.url") : server) + RPC_ENDPOINT);
+        jsssl.setMaintainSession(true);
+        try {
+            jss = jsssl.getJirasoapserviceV2();
+            token = jss.login((user==null?props.getProperty("jira.username"):user),(password==null?props.getProperty("jira.password"):password));
+            log.debug("Connected, got token: " + token);
+        } catch (ServiceException e) {
+            log.error(e);
+        } catch (java.rmi.RemoteException e) {
+            log.error(e);
+        }
     }
 
     public String getToken() {
@@ -108,7 +107,7 @@ public class JiraConnector
             wlog.setStartDate(start);
             wlog.setTimeSpent(delta);
             wlog.setComment(comment);
-            return (jss.addWorklogAndAutoAdjustRemainingEstimate(token,key,wlog)==null?false:true);
+            return (jss.addWorklogAndAutoAdjustRemainingEstimate(token, key, wlog) != null);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -134,9 +133,4 @@ public class JiraConnector
         return logWorkAgainstIssueById(key,Calendar.getInstance(),delta,comment);
     }
 
-    public static void main( String[] args )
-    {
-        JiraConnector jc = new JiraConnector();
-        System.out.println("Issue "+ args[0] + (jc.issueExist(args[0])?" exist":" don't exist"));
-    }
 }

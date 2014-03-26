@@ -1,13 +1,15 @@
 set FromDate to date "%s"
 set ToDate to date "%s"
+set time of FromDate to 0
+set time of ToDate to days - 1
+--set ToDate to ToDate + 1 * days
 set EventId to 0
 tell application "Microsoft Outlook"
 	set CalEvents to {}
-	repeat with i from 1 to number of items in calendars
-		if name of item i of calendars is "%s" then
-			repeat with j from 1 to number of items of calendar events of item i of calendars
-				set CalEvent to item j of calendar events of item i of calendars
-				if start time of CalEvent is greater than FromDate and end time of CalEvent is less than ToDate and is recurring of CalEvent is false and all day flag of CalEvent is false then
+	repeat with thisCalendar in calendars
+		if name of thisCalendar is "%s" then
+			repeat with CalEvent in calendar events of thisCalendar
+				if start time of CalEvent >= FromDate and end time of CalEvent <= ToDate and is recurring of CalEvent is false and all day flag of CalEvent is false then
 					set EventId to EventId + 1
 					set eventContent to (content of CalEvent as string)
 					if eventContent = missing value then set eventContent to ""
@@ -36,25 +38,25 @@ tell application "Microsoft Outlook"
 					set reqPattern to recurrence of CalEvent
 					set nextDateStart to (start date of reqPattern) - (1 * days)
 					set stopDate to ToDate
-					if (end type of end date of reqPattern) = end date type and (data of end date of reqPattern is less than ToDate) then set stopDate to (data of end date of reqPattern)
+					if (end type of end date of reqPattern) = end date type and (data of end date of reqPattern <= ToDate) then set stopDate to (data of end date of reqPattern)
 					set MaxReqEvents to 0
 					set ReqEventCounter to 0
 					if (end type of end date of reqPattern) = end numbered type then set MaxReqEvents to data of end date of reqPattern
-					if nextDateStart is less than FromDate then set nextDateStart to FromDate - (1 * days)
+					if nextDateStart <= FromDate then set nextDateStart to FromDate
 					repeat (stopDate - FromDate) div days times
 						if recurrence type of reqPattern = daily then
-							repeat until nextDateStart is greater than stopDate
+							repeat until nextDateStart >= stopDate
 								set nextDateStart to nextDateStart + (1 * days)
 								set dayFromStart to (nextDateStart - (start date of reqPattern)) div (1 * days)
 								if dayFromStart mod (occurrence interval of reqPattern) = 0 then exit repeat
 							end repeat
 						end if
 						if recurrence type of reqPattern = weekly then
-							repeat until nextDateStart is greater than stopDate
+							repeat until nextDateStart >= stopDate
 								set nextDateStart to nextDateStart + (1 * days)
 								set weekFromStart to (nextDateStart - ((start date of reqPattern) - (((start date of reqPattern)'s weekday as number) * days))) div (7 * days)
 								if not weekFromStart mod (occurrence interval of reqPattern) = 0 then
-									repeat until nextDateStart is greater than stopDate
+									repeat until nextDateStart >= stopDate
 										set nextDateStart to nextDateStart + (1 * days)
 										set weekFromStart to (nextDateStart - ((start date of reqPattern) - (((start date of reqPattern)'s weekday as number) * days))) div (7 * days)
 										if weekFromStart mod (occurrence interval of reqPattern) = 0 then exit repeat
@@ -74,9 +76,9 @@ tell application "Microsoft Outlook"
 							-- if weekdays of days of week of reqPattern then set reqWD to reqWD & monday & tuesday & wednsday & thursday & friday
 							-- if weekends of days of week of reqPattern then set reqWD to reqWD & saturday & sunday
 						end if
-						if nextDateStart is greater than stopDate then exit repeat
+						if nextDateStart >= stopDate then exit repeat
 						set ReqEventCounter to ReqEventCounter + 1
-						if not MaxReqEvents = 0 and ReqEventCounter is greater than MaxReqEvents then exit repeat
+						if not MaxReqEvents = 0 and ReqEventCounter >= MaxReqEvents then exit repeat
 						set EventId to EventId + 1
 						set eventContent to (content of CalEvent as string)
 						if eventContent = missing value then set eventContent to ""

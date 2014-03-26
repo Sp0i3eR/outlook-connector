@@ -17,7 +17,7 @@ public class ASOutlookConnector extends OutlookConnector{
     private static String calEnd = "12/31/2012";
     private static String asFormat ;
     public ASOutlookConnector(String folderName) {
-        StringBuffer fileData = new StringBuffer(1000);
+        StringBuilder fileData = new StringBuilder(1000);
         BufferedReader reader = new BufferedReader(new InputStreamReader(this
                 .getClass().getClassLoader().getResourceAsStream("outlook.applescript")));
         char[] buf = new char[1024];
@@ -33,21 +33,33 @@ public class ASOutlookConnector extends OutlookConnector{
             log.warn(e);
         }
         asFormat = fileData.toString();
+        this.folderName=folderName;
 
     }
     public ASOutlookConnector() {
-        this(null);
+        this(currentFolder);
     }
 
     public int fetch() {
 
-        String script = String.format(asFormat, calStart, calEnd, currentFolder);
+        String script = String.format(asFormat, calStart, calEnd, folderName);
         ScriptEngineManager manager = new ScriptEngineManager();
         ScriptEngine engine = manager.getEngineByName("AppleScript");
+        if (engine == null ) {
+            log.warn("AppleScript engine not found, trying AppleScriptEngine");
+            engine = manager.getEngineByName("AppleScriptEngine");
+        }
+        if (engine == null) {
+            log.error("No usable AppleScript Engine found");
+            return 0;
+        }
+
         ArrayList<Object> retVal;
         Map<String,Object> appointment= new HashMap<String,Object>();
         try {
+            log.debug("Running applescript" + script);
             retVal = (ArrayList<Object>)engine.eval(script);
+            log.debug("Script finished");
             Integer counter=0;
             Integer evtId=1;
             String evtParam="";
@@ -80,7 +92,8 @@ public class ASOutlookConnector extends OutlookConnector{
     }
 
     public int fetch(Calendar start, Calendar end) {
-        DateFormat df = new SimpleDateFormat("M/d/yyyy");
+//        DateFormat df = new SimpleDateFormat("E d MMM yyyy",Locale.US);
+        DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT);
         calStart=df.format(start.getTime());
         calEnd=df.format(end.getTime());
         log.info("Restricting result by start date: " + calStart + " and end date: " + calEnd);

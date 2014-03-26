@@ -15,23 +15,19 @@ import com.jacob.com.Variant;
 public class COMOutlookConnector extends OutlookConnector{
 
 
-    private ActiveXComponent axc;
-    private Dispatch outlook;
-    private Dispatch ns;
-    private Dispatch currentFolder;
     private Dispatch items;
 
     public COMOutlookConnector() {
         this(null);
     }
     public COMOutlookConnector(String folderName) {
-        axc = new ActiveXComponent("Outlook.Application");
+        ActiveXComponent axc = new ActiveXComponent("Outlook.Application");
         log.info("Outlook ActiveX version: " + axc.getProperty("Version"));
-        outlook = axc.getObject();
+        Dispatch outlook = axc.getObject();
         log.info("Got Outlook version: " + Dispatch.get(outlook,"Version"));
-        ns = axc.getProperty("Session").toDispatch();
-        currentFolder = Dispatch.call(ns,"GetDefaultFolder",olFolderCalendar).toDispatch();
-        if (folderName!=null) currentFolder = findFolder(folderName,currentFolder);
+        Dispatch ns = axc.getProperty("Session").toDispatch();
+        Dispatch currentFolder = Dispatch.call(ns, "GetDefaultFolder", olFolderCalendar).toDispatch();
+        if (folderName!=null) currentFolder = findFolder(folderName, currentFolder);
         items = Dispatch.get(currentFolder,"Items").toDispatch();
     }
     private Dispatch findFolder(String folderName,Dispatch folder) {

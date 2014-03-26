@@ -3,6 +3,7 @@ package ru.hflabs.oss;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.io.PrintStream;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -41,7 +42,6 @@ public class Pump {
     private Map<Appointment,String> appointmentMapper = new HashMap<Appointment,String>();
     private List<Appointment> missedTasks = new ArrayList<Appointment>();
     private String calendarName;
-    private static String taskRegex = "[A-Z]+-[0-9]+";
 
     public Pump(){
         File propertiesFile = new File(System.getProperty("user.dir")+File.separator+"pump.xml");
@@ -71,9 +71,6 @@ public class Pump {
                 oc = new COMOutlookConnector(calendarName);
 
             log.info("Done.");
-            log.info("Connecting to JIRA instance...");
-            jc = new JiraConnector();
-            log.info("Done.");
 
         } catch (ParserConfigurationException e) {
             log.error(e);
@@ -85,6 +82,7 @@ public class Pump {
     }
 
     public String getBestTaskVariant(Appointment appointment) {
+        String taskRegex = "[A-Z]+-[0-9]+";
         Pattern p = Pattern.compile(taskRegex);
         Matcher m = p.matcher(appointment.getSubject());
 
@@ -100,9 +98,15 @@ public class Pump {
         return null;
 
     }
-    public void map(Calendar start,Calendar end) {
+    public void get(Calendar start,Calendar end) {
         appointmentMapper.clear();
         oc.fetch(start,end);
+    }
+
+    public void map() {
+        log.info("Connecting to JIRA instance...");
+        jc = new JiraConnector();
+        log.info("Done.");
         for (Appointment appointment:oc.getAppointmentlist()) {
             String task = getBestTaskVariant(appointment);
             log.debug(appointment.getSubject() + " => " + task);
@@ -123,7 +127,12 @@ public class Pump {
 
     }
     public void pretend() {
-        Formatter f = new Formatter(System.out);
+    Formatter f = new Formatter();
+                  try {
+         f = new Formatter(new PrintStream(System.out,true,"UTF-8"));
+                  } catch (UnsupportedEncodingException e) {
+                      log.warn(e);
+                  }
         f.format("%40s | %10s | %6s | %10s\n","Subject","Date","Time","Task");
         for (Appointment appt:appointmentMapper.keySet()) {
                 f.format("%1$40s | %2$2td.%2$2tm.%2$tY | %3$5dm | %4$10s\n",systemAwareString(appt.getSubject()),appt.getStart().getTime(),appt.getDuration(),appointmentMapper.get(appt));
@@ -134,6 +143,9 @@ public class Pump {
         }
     }
     public void push() {
+        log.info("Connecting to JIRA instance...");
+        jc = new JiraConnector();
+        log.info("Done.");
         for (Appointment appt:appointmentMapper.keySet()) {
             jc.logWorkAgainstIssueById(appointmentMapper.get(appt),appt.getStart(),appt.getEnd(),appt.getSubject()); //+ "\n" + appt.getBody());
         }
@@ -158,7 +170,8 @@ public class Pump {
         } catch (ParseException e) {
             log.error(e);
         }
-        pump.map(start,end);
+        pump.get(start, end);
+        pump.map();
         pump.pretend();
         String agree = System.console().readLine("Is this ^ ok? [y/N] ");
         if (agree.matches("^[Yy][Ee]?[Ss]?"))
