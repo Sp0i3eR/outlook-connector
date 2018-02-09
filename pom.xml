@@ -4,7 +4,7 @@
 
     <groupId>ru.hflabs.oss</groupId>
     <artifactId>outlook-connector</artifactId>
-    <version>1.2</version>
+    <version>1.3</version>
     <packaging>jar</packaging>
 
     <name>outlook-connector</name>
@@ -51,9 +51,9 @@
             <version>3.1</version>
         </dependency>
         <dependency>
-            <groupId>org.swift.common</groupId>
-            <artifactId>jira-soap</artifactId>
-            <version>4.4.0</version>
+            <groupId>com.atlassian.jira</groupId>
+            <artifactId>jira-rest-java-client</artifactId>
+            <version>1.0</version>
         </dependency>
         <dependency>
             <groupId>net.sf.jacob-project</groupId>

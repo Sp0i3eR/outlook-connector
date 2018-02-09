@@ -1,25 +1,25 @@
 package ru.hflabs.oss;
 
+import com.atlassian.jira.rest.client.JiraRestClient;
+import com.atlassian.jira.rest.client.NullProgressMonitor;
+import com.atlassian.jira.rest.client.RestClientException;
+import com.atlassian.jira.rest.client.domain.Issue;
+import com.atlassian.jira.rest.client.domain.input.WorklogInput;
+import com.atlassian.jira.rest.client.domain.input.WorklogInputBuilder;
+import com.atlassian.jira.rest.client.internal.jersey.JerseyJiraRestClientFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.joda.time.DateTime;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Calendar;
 import java.util.Properties;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-
-import org.swift.common.soap.jira.JiraSoapService;
-import org.swift.common.soap.jira.JiraSoapServiceServiceLocator;
-import org.swift.common.soap.jira.RemoteAuthenticationException;
-import org.swift.common.soap.jira.RemoteException;
-import org.swift.common.soap.jira.RemotePermissionException;
-import org.swift.common.soap.jira.RemoteWorklog;
-
-import javax.xml.rpc.ServiceException;
 
 /**
  * Jira connection class 
@@ -29,8 +29,10 @@ public class JiraConnector
 {
     private static final Log log =
         LogFactory.getLog(JiraConnector.class);
+    public static final JerseyJiraRestClientFactory JIRA_FACTORY = new JerseyJiraRestClientFactory();
 
-    private JiraSoapService jss = null;
+    private final JiraRestClient rc;
+    public static final NullProgressMonitor MONITOR = new NullProgressMonitor();
     private String token = null;
 
 
@@ -47,67 +49,56 @@ public class JiraConnector
         } catch (FileNotFoundException e) {
             log.warn("User preferences not found");
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e);
         }
-        String RPC_ENDPOINT = "/rpc/soap/jirasoapservice-v2";
-        log.debug("Connecting to server: " + (server == null ? props.getProperty("jira.url") : server) + RPC_ENDPOINT);
-        JiraSoapServiceServiceLocator jsssl = new JiraSoapServiceServiceLocator();
-        jsssl.setJirasoapserviceV2EndpointAddress((server == null ? props.getProperty("jira.url") : server) + RPC_ENDPOINT);
-        jsssl.setMaintainSession(true);
+        log.debug("Connecting to server: " + (server == null ? props.getProperty("jira.url") : server));
+
         try {
-            jss = jsssl.getJirasoapserviceV2();
-            token = jss.login((user==null?props.getProperty("jira.username"):user),(password==null?props.getProperty("jira.password"):password));
-            log.debug("Connected, got token: " + token);
-        } catch (ServiceException e) {
+            rc = JIRA_FACTORY.createWithBasicHttpAuthentication(
+                    new URI(server == null ? props.getProperty("jira.url") : server),
+                    (user == null ? props.getProperty("jira.username") : user),
+                    (password == null ? props.getProperty("jira.password") : password));
+            log.debug("Connected, got token: " + rc.getSessionClient().getCurrentSession(MONITOR).getUserUri());
+        } catch (URISyntaxException e) {
             log.error(e);
-        } catch (java.rmi.RemoteException e) {
-            log.error(e);
+            throw new RuntimeException(e);
         }
     }
 
-    public String getToken() {
-        return token;
-    }
 
-    public JiraSoapService getJiraSoapService() {
-        return jss;
-    }
-
-    private String DateIntervalToJira(Calendar start, Calendar end) {
+    private int dateIntervalToJira(Calendar start, Calendar end) {
         log.debug("delta = " + end.getTimeInMillis() + " - " + start.getTimeInMillis());
-        long delta=(end.getTimeInMillis() - start.getTimeInMillis())/(60*1000);
-        return Long.toString(delta) + "m";
+        return (int) ((end.getTimeInMillis() - start.getTimeInMillis()) / (60 * 1000));
     }
 
     public boolean issueExist(String key) {
         try {
-            jss.getIssue(token,key);
-        } catch (RemotePermissionException e) {
-            return false;
-        } catch (RemoteAuthenticationException e) {
-            log.debug(e);
-            return false;
-        } catch (RemoteException e) {
-            log.debug(e);
-            return false;
-        } catch (java.rmi.RemoteException e) {
-            log.debug(e);
+            rc.getIssueClient().getIssue(key, MONITOR);
+        } catch (RestClientException e) {
+            for (String err : e.getErrorMessages()) {
+                System.out.println(key + ":" + err);
+            }
             return false;
         }
         return true;
+
     }
 
 
-    public boolean logWorkAgainstIssueById(String key,Calendar start,String delta,String comment) {
+    public boolean logWorkAgainstIssueById(String key, Calendar start, int delta, String comment) {
         try {
-            RemoteWorklog wlog = new RemoteWorklog();
+            Issue issue = rc.getIssueClient().getIssue(key, MONITOR);
+            URI worklogURI = issue.getWorklogUri();
+            WorklogInput wlog = new WorklogInputBuilder(worklogURI)
+                    .setStartDate(new DateTime(start))
+                    .setMinutesSpent(delta)
+                    .setComment(comment)
+                    .build();
             log.debug("Start = " + start);
             log.debug("Delta = " + delta);
             log.debug("Comment = " + comment);
-            wlog.setStartDate(start);
-            wlog.setTimeSpent(delta);
-            wlog.setComment(comment);
-            return (jss.addWorklogAndAutoAdjustRemainingEstimate(token, key, wlog) != null);
+            rc.getIssueClient().addWorklog(worklogURI, wlog, MONITOR);
+            return true; 
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -115,21 +106,22 @@ public class JiraConnector
     }
 
     public boolean logWorkAgainstIssueById(String key,Calendar start,Calendar end,String comment) {
-        return logWorkAgainstIssueById(key,start,DateIntervalToJira(start,end),comment);
+        return logWorkAgainstIssueById(key, start, dateIntervalToJira(start, end), comment);
     }
 
     public boolean logWorkAgainstIssueById(String key,Calendar start,Calendar end) {
-        return logWorkAgainstIssueById(key,start,DateIntervalToJira(start,end),"");
+        return logWorkAgainstIssueById(key, start, dateIntervalToJira(start, end), "");
     }
 
-    public boolean logWorkAgainstIssueById(String key,Calendar start,String delta) {
+    public boolean logWorkAgainstIssueById(String key, Calendar start, int delta) {
         return logWorkAgainstIssueById(key,start,delta,"");
     }
 
-    public boolean logWorkAgainstIssueById(String key,String delta) {
+    public boolean logWorkAgainstIssueById(String key, int delta) {
         return logWorkAgainstIssueById(key,Calendar.getInstance(),delta,"");
     }
-    public boolean logWorkAgainstIssueById(String key,String delta,String comment) {
+
+    public boolean logWorkAgainstIssueById(String key, int delta, String comment) {
         return logWorkAgainstIssueById(key,Calendar.getInstance(),delta,comment);
     }
 
